@@ -7,7 +7,7 @@ The public scripts are organized as a readable end-to-end research pipeline.
 ```text
 01_tokenize_adni_primary_sequences.py
 02_preprocess_adni_sequences_train_only.py
-03_build_adni_promise_dynamic_tokens.py
+03_build_adni_dynamic_tokens.py
 ```
 
 ## Internal model development and evaluation
@@ -32,8 +32,12 @@ The public scripts are organized as a readable end-to-end research pipeline.
 
 ## Patient-style research demo
 
+The demo app is kept under:
+
 ```text
-14_make_patient_demo.py
+app/streamlit_app.py
 ```
+
+It is not part of the core numbered modeling pipeline.
 
 Raw data, generated feature tensors, model checkpoints, and patient-level predictions are intentionally not included in this public repository.

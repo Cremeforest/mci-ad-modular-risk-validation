@@ -10,7 +10,7 @@ The internal ADNI pipeline converts irregular MCI visit histories into fixed-len
 ADNI clinical tables
   -> MCI landmark / visit-history construction
   -> train-only preprocessing
-  -> PROMISE-style dynamic token construction
+  -> dynamic longitudinal token construction
   -> final model training and evaluation
 ```
 
@@ -19,7 +19,7 @@ ADNI clinical tables
 ```text
 scripts/01_tokenize_adni_primary_sequences.py
 scripts/02_preprocess_adni_sequences_train_only.py
-scripts/03_build_adni_promise_dynamic_tokens.py
+scripts/03_build_adni_dynamic_tokens.py
 ```
 
 ### 1. Tokenize primary ADNI sequences
@@ -36,9 +36,9 @@ This stage applies preprocessing using training-split information only. It creat
 
 The important design choice is that imputation and scaling parameters are estimated from the training split only, then applied to validation/test data. This reduces preprocessing leakage.
 
-### 3. PROMISE-style dynamic tokens
+### 3. Dynamic longitudinal tokens
 
-`03_build_adni_promise_dynamic_tokens.py`
+`03_build_adni_dynamic_tokens.py`
 
 This stage builds the final longitudinal token package used by the model:
 

@@ -1,9 +1,7 @@
 # Notice
 
-Copyright (c) 2026 Cremeforest.
+This repository is shared as a public research portfolio and PhD outreach package.
 
-All rights reserved unless otherwise stated.
+Raw ADNI/NACC data, model checkpoints, generated feature tensors, calibration objects, and patient-level predictions are not included.
 
-This repository is shared as a public research portfolio and PhD outreach package. No open-source license is currently granted for reuse, modification, redistribution, or commercial use of the code.
-
-Raw ADNI/NACC data, model checkpoints, feature tensors, and patient-level predictions are not included.
+The public Streamlit demo uses a lightweight proxy scoring function for interface illustration and does not represent a deployed clinical model.
