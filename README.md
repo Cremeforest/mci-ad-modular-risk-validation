@@ -188,3 +188,7 @@ scripts/03_build_adni_promise_dynamic_tokens.py
 ```
 
 These scripts document the pipeline from ADNI clinical tables to PROMISE-style dynamic tokens with value, missingness mask, time, delta, slope, visit mask, horizon labels, and observed-label masks. Raw ADNI/NACC data and generated participant-level tensors are not redistributed. See `docs/DATA_PROCESSING.md` for details.
+
+## Script workflow
+
+The public scripts are renumbered as a clean end-to-end workflow from ADNI preprocessing to internal evaluation, NACC external validation, and the patient-style research demo. See `docs/SCRIPT_WORKFLOW.md`.
