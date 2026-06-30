@@ -1,185 +1,67 @@
-# Availability-aware modular longitudinal risk prediction for MCI-to-AD conversion
+# Modular longitudinal risk prediction for MCI-to-AD conversion
 
-**Research prototype | Longitudinal clinical prediction | Modular missingness-aware fusion | Not clinically validated**
+**ADNI internal development | NACC external validation | Incomplete clinical assessment | Research use only**
 
-This repository develops a leakage-aware longitudinal model for predicting conversion from mild cognitive impairment (MCI) to Alzheimer's disease dementia over 1-, 2-, 3-, and 5-year horizons. The current primary model is the locked **Step39 availability-aware modular GRU gated-fusion model**.
+This repository presents a retrospective clinical-AI project for predicting conversion from mild cognitive impairment (MCI) to Alzheimer's disease (AD) dementia using longitudinal routine clinical assessments.
 
-> **Important.** This is a retrospective research prototype. It is not a clinical calculator and must not be used for diagnosis, treatment, triage, prognosis communication, or patient-level medical decision-making. NACC results are reported as a direct external dry-run, not definitive locked external validation.
+The final model is a **summary-augmented feature-level modular longitudinal model** designed for incomplete clinical assessment settings, where some tests may be unavailable across visits or cohorts.
 
-## Overview
+> **Important:** This repository is for research demonstration only. It is not a clinical tool, not medical advice, and not intended for diagnosis, treatment decisions, triage, prognosis communication, or patient-level medical decision-making.
 
-The model represents each patient's current-and-past visit history as longitudinal clinical tokens. Instead of requiring all cohorts to share a complete feature set, the model separates input history into clinical modules and fuses available modules with a learned gate.
+---
 
-**Modules**
+## Key contributions
 
-- `demographics`: age at visit, sex, education
-- `cognition`: MMSE, ADAS13
-- `function`: FAQTOTAL
-- `global_severity`: CDGLOBAL, CDRSB
-- `timing_missingness`: scaled time features and all feature masks
+1. **Leakage-aware longitudinal cohort construction**  
+   MCI visit histories are converted into landmark-style longitudinal samples with 1/2/3/5-year conversion labels and observed-label masks.
 
-Clinical modules use scaled values, feature masks, delta-from-first, and slope-like components. Module-specific GRU encoders are combined by availability-aware gated fusion.
+2. **PROMISE-style dynamic token construction**  
+   Each patient history is represented using value, missingness mask, time, delta, slope-like trend, and visit-mask components.
 
-## Mainline evidence chain
+3. **Summary-augmented modular longitudinal model**  
+   Each clinical feature is modeled as a module combining temporal encoding with module-local trajectory summaries.
+
+4. **Missing-feature-aware external validation**  
+   The frozen ADNI-trained model was externally validated on a NACC first-MCI cohort under a no_ADAS13 setting without retraining.
+
+5. **Calibration-shift analysis**  
+   Raw frozen probabilities underestimated long-horizon NACC risk; cross-fitted local Platt recalibration improved absolute risk calibration without retraining the prediction model.
+
+---
+
+## Project overview
+
+The project predicts whether an MCI patient will convert to AD dementia within:
 
 ```text
-Step39 locked modular GRU gated-fusion model
-→ Step40 internal calibration/robustness audit
-→ Step70c strict-load NACC direct external dry-run
-→ Step70d internal/external and gate-shift synthesis
-→ Step71 claims audit
-→ Step74 compact README
+1 year
+2 years
+3 years
+5 years
 ```
 
-## Model checkpoint
+The model uses routine clinical variables:
 
-- Checkpoint: `results/models/39_modular_availability_aware_model/best_model.pt`
-- Script version: `v1_modular_availability_aware_gru_gated_fusion`
-- Horizons: `[1, 2, 3, 5]`
-- Architecture: module-specific GRU temporal encoders with availability-aware gated fusion
-- The Step39 primary model is **not** a Transformer
-
-## Results summary
-
-### ADNI internal test and NACC direct external dry-run
-
-| Horizon | ADNI AUROC | ADNI AUPRC | ADNI Brier | NACC dry-run AUROC | NACC dry-run AUPRC | NACC dry-run Brier |
-|---:|---:|---:|---:|---:|---:|---:|
-| 1y | 0.911 | 0.420 | 0.048 | 0.687 | 0.110 | 0.051 |
-| 2y | 0.894 | 0.610 | 0.086 | 0.717 | 0.442 | 0.158 |
-| 3y | 0.905 | 0.815 | 0.103 | 0.727 | 0.641 | 0.208 |
-| 5y | 0.900 | 0.888 | 0.130 | 0.723 | 0.815 | 0.230 |
-
-The model shows strong ADNI internal discrimination and moderate NACC direct dry-run discrimination. The external drop is expected because NACC has systematic feature mismatch and reconstructed timing inputs.
-
-### External feature mismatch
-
-- ADAS13 token non-missing rate: `0.0000`
-- MMSE token non-missing rate: `0.5458`
-- FAQTOTAL token non-missing rate: `0.7009`
-- Cognition module landmark availability: `0.6102`
-- Function module landmark availability: `0.7954`
-
-### Gate re-allocation under external mismatch
-
-| Module | ADNI mean gate | NACC mean gate | Shift | NACC availability |
-|---|---:|---:|---:|---:|
-| cognition | 0.347 | 0.205 | -0.141 | 0.610 |
-| demographics | 0.112 | 0.150 | 0.038 | 1.000 |
-| function | 0.219 | 0.209 | -0.009 | 0.795 |
-| global_severity | 0.162 | 0.226 | 0.064 | 1.000 |
-| timing_missingness | 0.161 | 0.209 | 0.049 | 1.000 |
-
-Gate weights summarize model behavior, not causal importance. In NACC, cognition receives lower gate weight, while global severity, timing/missingness, and demographics receive higher weights, consistent with NACC-specific feature availability.
-
-### Missing-module stress-test headline
-
-Missing-module scenarios are inference-time stress tests, not evidence that modules are clinically interchangeable. The full table is stored in `results/reports/70d_step39_modular_external_dry_run_synthesis/external_missing_module_interpretation_table.csv`.
-
-| Scenario | 3y AUROC | 3y AUPRC | 3y Brier | Interpretation |
-|---|---:|---:|---:|---|
-| full_modules | 0.727 | 0.641 | 0.208 | Reference full modular scenario. |
-| process_only | 0.506 | 0.394 | 0.251 | Timing/missingness process alone is near chance externally, indicating clinical modules carry most discrimination. |
-| function_only | 0.669 | 0.568 | 0.218 | Function module is one of the strongest single-module external scenarios, consistent with FAQTOTAL carrying progression signal. |
-| severity_only | 0.653 | 0.576 | 0.229 | Global severity is a strong single-module scenario, reflecting high availability of CDGLOBAL/CDRSB in NACC. |
-| no_cognition | 0.717 | 0.620 | 0.210 | Removing cognition causes only small loss, likely because ADAS13 is unavailable and MMSE is incomplete in NACC. |
-| no_timing_missingness | 0.736 | 0.646 | 0.206 | Removing timing/missingness improves this horizon, suggesting reconstructed timing features may introduce external domain shift. |
-
-## Calibration and robustness
-
-Step40 provides internal calibration and patient-cluster bootstrap artifacts for the locked modular model. These results support internal model auditing but do not establish clinical deployment readiness or final external calibration.
-
-### Calibration metrics
-
-| split | risk_type | horizon_year | AUROC | AUPRC | Brier | calibration_intercept | calibration_slope | observed_n | positive_n | positive_rate |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| test | platt | 1 | 0.9107 | 0.4195 | 0.0481 | 0.1284 | 1.2076 | 570 | 37 | 0.0649 |
-| test | raw | 1 | 0.9107 | 0.4195 | 0.0481 | 0.3271 | 1.2150 | 570 | 37 | 0.0649 |
-| test | platt | 2 | 0.8943 | 0.6095 | 0.0861 | -0.0028 | 1.0536 | 509 | 80 | 0.1572 |
-| test | raw | 2 | 0.8943 | 0.6095 | 0.0863 | -0.1252 | 1.0418 | 509 | 80 | 0.1572 |
-| test | platt | 3 | 0.9047 | 0.8154 | 0.1036 | -0.0890 | 0.9319 | 459 | 117 | 0.2549 |
-| test | raw | 3 | 0.9047 | 0.8154 | 0.1032 | -0.0307 | 1.0052 | 459 | 117 | 0.2549 |
-| test | platt | 5 | 0.8996 | 0.8884 | 0.1323 | -0.3216 | 0.9034 | 369 | 148 | 0.4011 |
-| test | raw | 5 | 0.8996 | 0.8884 | 0.1300 | -0.1481 | 0.9169 | 369 | 148 | 0.4011 |
-
-### Patient-cluster bootstrap CI headline
-
-| risk_type | horizon_year | metric | mean | median | ci_lower_2.5 | ci_upper_97.5 | n_bootstrap_valid |
-| --- | --- | --- | --- | --- | --- | --- | --- |
-| raw | 1 | AUROC | 0.9106 | 0.9122 | 0.8668 | 0.9492 | 1000 |
-| raw | 2 | AUROC | 0.8936 | 0.8944 | 0.8463 | 0.9339 | 1000 |
-| raw | 3 | AUROC | 0.9041 | 0.9057 | 0.8447 | 0.9481 | 1000 |
-| raw | 5 | AUROC | 0.8986 | 0.9006 | 0.8298 | 0.9523 | 1000 |
-
-Available Step40 artifacts include calibration metrics, Platt parameters, calibration deciles, calibration plots, bootstrap distribution, and patient-cluster bootstrap CIs.
-
-## Reproducibility
-
-These commands assume upstream artifacts already exist. They do not redistribute raw ADNI/NACC data.
-
-```bat
-conda activate pytorch
-cd /d C:\Users\18142\Desktop\mci_ad_longitudinal_survival
-
-python scripts\70c_strict_load_step39_modular_checkpoint.py
-python scripts\70d_summarize_step39_modular_external_dry_run.py
-python scripts\71_modular_mainline_freeze_and_claims_audit.py
-python scripts\73_summarize_modular_calibration_robustness.py
-python scripts\74_generate_compact_modular_first_readme.py
+```text
+age_at_visit
+sex_male
+PTEDUCAT
+MMSE
+ADAS13
+CDGLOBAL
+CDRSB
+FAQTOTAL
 ```
 
-## Repository map
+These variables cover demographics, cognition, global severity, and functional assessment. Biomarkers such as PET, CSF, MRI, and APOE are intentionally not used in the final public-facing model description.
 
-- `scripts/39_train_modular_availability_aware_model.py`: Step39 modular model training script
-- `results/models/39_modular_availability_aware_model/`: locked Step39 checkpoint, metrics, predictions, gate weights
-- `results/reporting/40_modular_model_calibration_robustness/`: calibration and robustness artifacts
-- `results/external_validation/70c_step39_modular_nacc_direct_dry_run/`: strict-load NACC direct dry-run outputs
-- `results/reports/70d_step39_modular_external_dry_run_synthesis/`: internal/external and gate-shift synthesis
-- `results/reports/71_modular_mainline_freeze_and_claims_audit/`: evidence inventory and claims audit
-- `results/reports/73_modular_calibration_robustness_synthesis/`: Step40 calibration/robustness synthesis
-
-## What this project can claim
-
-- A locked Step39 modular availability-aware GRU gated-fusion checkpoint exists.
-- ADNI internal test performance is strong across 1/2/3/5-year horizons.
-- NACC direct dry-run retained moderate discrimination despite feature mismatch.
-- External gate re-allocation and missing-module stress tests provide useful model-behavior diagnostics.
-- Step40 provides internal calibration and patient-cluster robustness artifacts.
-
-## What this project does not claim
-
-- It does not claim clinical deployment readiness.
-- It does not claim prospective validation.
-- It does not claim definitive locked external validation on NACC.
-- It does not claim causal module importance from gate weights.
-- It does not claim state-of-the-art performance without a fair benchmark suite.
-
-## Limitations and next steps
-
-The NACC analysis is a direct dry-run because NACC lacks ADAS13 and the Step45 common-feature file does not preserve the full native Step39 four-dimensional time tensor. Future work should reconstruct external cohorts with native time features, lock calibration/display rules, benchmark against fair baselines, and evaluate clinical utility prospectively.
-
-## Optional web demo
-
-A web interface can be added as an optional research demonstration. It should not define the scientific contribution. The scientific contribution is the modular longitudinal model and its behavior under cross-cohort feature mismatch.
-
-## Disclaimer
-
-Research use only. This model has not undergone prospective validation, regulatory review, or clinical utility evaluation.
-
-
-## Streamlit patient-style research demo
-
-A patient-style research demo is available:
-
-```bash
-streamlit run app/streamlit_app.py
-```
-
-The demo accepts routine clinical assessment values and displays 1/2/3/5-year research-demo risk estimates. The public demo estimate is not the private frozen model output and is not intended for clinical use.
+---
 
 ## Data processing
 
-The repository includes the upstream ADNI preprocessing scripts used to construct the longitudinal token tensors for the final model:
+Raw ADNI and NACC participant-level data are **not** redistributed in this repository.
+
+The public preprocessing scripts document the internal ADNI pipeline:
 
 ```text
 scripts/01_tokenize_adni_primary_sequences.py
@@ -187,8 +69,292 @@ scripts/02_preprocess_adni_sequences_train_only.py
 scripts/03_build_adni_promise_dynamic_tokens.py
 ```
 
-These scripts document the pipeline from ADNI clinical tables to PROMISE-style dynamic tokens with value, missingness mask, time, delta, slope, visit mask, horizon labels, and observed-label masks. Raw ADNI/NACC data and generated participant-level tensors are not redistributed. See `docs/DATA_PROCESSING.md` for details.
+The final internal token package contains:
 
-## Script workflow
+```text
+X_values_imputed_scaled
+X_feature_mask
+X_time_scaled
+X_delta_from_first
+X_slope_from_first
+X_elapsed_from_first
+X_visit_mask
+y_labels
+y_observed
+sequence_lengths
+train_idx
+val_idx
+test_idx
+feature_names
+```
 
-The public scripts are renumbered as a clean end-to-end workflow from ADNI preprocessing to internal evaluation, NACC external validation, and the patient-style research demo. See `docs/SCRIPT_WORKFLOW.md`.
+See:
+
+```text
+docs/DATA_PROCESSING.md
+```
+
+for the preprocessing and token-construction description.
+
+---
+
+## Model design
+
+The final model is a **summary-augmented feature-level modular longitudinal model**.
+
+Each clinical feature has its own module:
+
+```text
+age_at_visit
+sex_male
+PTEDUCAT
+MMSE
+ADAS13
+CDGLOBAL
+CDRSB
+FAQTOTAL
+```
+
+A separate visit-process component represents visit timing and missingness structure.
+
+Each feature module combines:
+
+```text
+1. temporal encoding of observed visit history
+2. module-local trajectory summaries
+```
+
+Module-local summaries include:
+
+```text
+last observed value
+mean observed value
+minimum / maximum
+standard deviation
+last-minus-first change
+slope-like change
+observed count
+observed rate
+```
+
+This design allows the model to operate when selected clinical features are unavailable.
+
+---
+
+## Internal ADNI evaluation
+
+Internal full-module performance was evaluated on the ADNI test split with bootstrap 95% confidence intervals.
+
+| Horizon | AUROC | AUPRC | Brier |
+|---:|---:|---:|---:|
+| 1y | 0.916 (0.880-0.949) | 0.412 (0.287-0.573) | 0.047 (0.036-0.058) |
+| 2y | 0.904 (0.869-0.933) | 0.585 (0.483-0.718) | 0.085 (0.071-0.100) |
+| 3y | 0.914 (0.880-0.943) | 0.822 (0.746-0.877) | 0.099 (0.081-0.118) |
+| 5y | 0.926 (0.899-0.952) | 0.903 (0.860-0.940) | 0.108 (0.088-0.127) |
+
+These internal results should be interpreted together with the external validation below.
+
+---
+
+## NACC external validation
+
+External validation was performed using:
+
+```text
+Model: frozen ADNI-trained final model
+External cohort: NACC first-MCI cohort
+Scenario: no_ADAS13
+Sample size: 12,052 unique patients
+Retraining: none
+```
+
+| Horizon | AUROC | 95% CI | AUPRC | 95% CI | Brier |
+|---:|---:|---:|---:|---:|---:|
+| 1y | 0.733 | 0.720-0.746 | 0.298 | 0.279-0.318 | 0.122 |
+| 2y | 0.740 | 0.729-0.751 | 0.529 | 0.509-0.549 | 0.192 |
+| 3y | 0.740 | 0.727-0.750 | 0.664 | 0.646-0.681 | 0.241 |
+| 5y | 0.749 | 0.735-0.762 | 0.835 | 0.822-0.848 | 0.286 |
+
+The frozen ADNI-trained model retained moderate external discrimination across horizons under the no_ADAS13 setting.
+
+---
+
+## Calibration under cohort shift
+
+Raw frozen probabilities underestimated long-horizon absolute risk in NACC.
+
+Examples:
+
+```text
+3-year observed event rate: 0.425
+3-year mean predicted risk: 0.277
+
+5-year observed event rate: 0.643
+5-year mean predicted risk: 0.405
+```
+
+Cross-fitted NACC local Platt recalibration improved Brier score without retraining the prediction model:
+
+```text
+3-year Brier: 0.241 -> 0.203
+5-year Brier: 0.286 -> 0.191
+```
+
+Interpretation:
+
+> The model retained external risk-stratification ability, but absolute probabilities required local recalibration under cross-cohort shift.
+
+---
+
+## Public script workflow
+
+The public scripts are organized as an end-to-end workflow.
+
+### ADNI internal data processing
+
+```text
+01_tokenize_adni_primary_sequences.py
+02_preprocess_adni_sequences_train_only.py
+03_build_adni_promise_dynamic_tokens.py
+```
+
+### Internal model development and evaluation
+
+```text
+04_train_final_modular_model.py
+05_internal_freeze_and_claims_audit.py
+06_internal_bootstrap_calibration.py
+```
+
+### NACC external validation
+
+```text
+07_nacc_schema_audit.py
+08_build_nacc_external_tokens.py
+09_prepare_nacc_aligned_tokens.py
+10_eval_frozen_model_on_nacc.py
+11_external_bootstrap_sensitivity_calibration.py
+12_nacc_local_recalibration.py
+13_finalize_external_validation_report.py
+```
+
+### Patient-style research demo
+
+```text
+14_make_patient_demo.py
+```
+
+See:
+
+```text
+docs/SCRIPT_WORKFLOW.md
+```
+
+for a compact script map.
+
+---
+
+## Patient-style research demo
+
+A small Streamlit demo illustrates the intended interface style:
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+The demo accepts up to 8 visit records and displays 1/2/3/5-year research-demo risk estimates.
+
+The public demo is not the private frozen model output and is not intended for clinical use.
+
+---
+
+## Repository structure
+
+```text
+app/
+  streamlit_app.py
+
+docs/
+  DATA_PROCESSING.md
+  METHODS_AND_RESULTS.md
+  CLAIMS_AND_LIMITATIONS.md
+  SCRIPT_WORKFLOW.md
+  STREAMLIT_DEMO.md
+  tables/
+
+scripts/
+  01_tokenize_adni_primary_sequences.py
+  02_preprocess_adni_sequences_train_only.py
+  03_build_adni_promise_dynamic_tokens.py
+  04_train_final_modular_model.py
+  ...
+  14_make_patient_demo.py
+
+README.md
+MODEL_CARD.md
+NOTICE.md
+requirements.txt
+```
+
+---
+
+## Quickstart
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Run the public demo:
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+Reproducing the full ADNI/NACC pipeline requires authorized local access to the corresponding datasets.
+
+---
+
+## What is not included
+
+This public repository does not include:
+
+```text
+raw ADNI data
+raw NACC data
+participant-level feature tensors
+model checkpoints
+patient-level predictions
+private paper draft
+```
+
+This is intentional for data-access, privacy, and research-integrity reasons.
+
+---
+
+## Limitations
+
+- Retrospective cohort modeling.
+- No prospective validation.
+- Not clinically deployable.
+- NACC external validation was performed under a no_ADAS13 scenario, not full-module external validation.
+- Raw frozen probabilities were not externally well calibrated without local recalibration.
+- Module weights and masks should not be interpreted as causal feature importance.
+- The Streamlit app is a public research demo, not the deployed research model.
+
+---
+
+## Project status
+
+Manuscript-style write-up in preparation.
+
+For now, this repository is intended as a public research portfolio and PhD outreach package.
+
+---
+
+## Notice
+
+Copyright (c) 2026 Cremeforest. All rights reserved unless otherwise stated.
+
+No open-source license is currently granted for reuse, modification, or redistribution of the code.
