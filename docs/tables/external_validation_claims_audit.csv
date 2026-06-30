@@ -1,0 +1,7 @@
+﻿claim,status,wording,caution
+Frozen ADNI-trained v4 was externally validated on NACC.,supported,Frozen v4 was externally evaluated on a NACC first-MCI cohort under the no_ADAS13 scenario.,Do not call this full-module external validation because ADAS13 is unavailable in NACC.
+The model retained external discrimination.,supported,"The model retained moderate external discrimination, with AUROC approximately 0.733–0.749 across 1/2/3/5-year horizons.",Report confidence intervals and external setting.
+The raw frozen risks are well calibrated on NACC.,not supported,"Raw frozen risks showed systematic underestimation of absolute conversion risk, especially for 3y/5y.",Do not claim externally accurate absolute probabilities from raw frozen outputs.
+Local recalibration improves external calibration.,supported as post-hoc sensitivity,Cross-fitted NACC local Platt recalibration improved Brier score and calibration-in-the-large without retraining the prediction model.,"Label this as local recalibration sensitivity, not untouched external validation."
+The model is clinically deployable.,not supported,"The model is suitable for retrospective external risk stratification analysis, but prospective validation and local calibration are required before clinical deployment.",Avoid deployment claims.
+This is rich longitudinal external validation.,partially supported / limited,"External validation was performed in a first-MCI, low-history NACC setting.","Most NACC samples have sequence_length=1, so avoid overstating longitudinal history."

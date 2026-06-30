@@ -1,0 +1,38 @@
+# Raw/protected cohort data
+data/
+*.dta
+*.sas7bdat
+*.parquet
+
+# Model checkpoints and feature tensors
+results/models/
+results/features/
+*.pt
+*.pth
+*.npz
+*.npy
+*.pkl
+*.pickle
+
+# Patient-level outputs / predictions
+**/predictions*.csv
+**/*prediction*.csv
+**/*patient*.csv
+**/*sample*.csv
+
+# Local report cache
+results/reports/
+
+# Python/cache
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+.venv/
+env/
+venv/
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
