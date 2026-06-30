@@ -165,3 +165,26 @@ A web interface can be added as an optional research demonstration. It should no
 ## Disclaimer
 
 Research use only. This model has not undergone prospective validation, regulatory review, or clinical utility evaluation.
+
+
+## Streamlit patient-style research demo
+
+A patient-style research demo is available:
+
+```bash
+streamlit run app/streamlit_app.py
+```
+
+The demo accepts routine clinical assessment values and displays 1/2/3/5-year research-demo risk estimates. The public demo estimate is not the private frozen model output and is not intended for clinical use.
+
+## Data processing
+
+The repository includes the upstream ADNI preprocessing scripts used to construct the longitudinal token tensors for the final model:
+
+```text
+scripts/01_tokenize_adni_primary_sequences.py
+scripts/02_preprocess_adni_sequences_train_only.py
+scripts/03_build_adni_promise_dynamic_tokens.py
+```
+
+These scripts document the pipeline from ADNI clinical tables to PROMISE-style dynamic tokens with value, missingness mask, time, delta, slope, visit mask, horizon labels, and observed-label masks. Raw ADNI/NACC data and generated participant-level tensors are not redistributed. See `docs/DATA_PROCESSING.md` for details.
