@@ -147,4 +147,4 @@ This is a retrospective research project. It has not been prospectively validate
 
 ## Project status
 
-Manuscript-style write-up in preparation.
+Manuscript-style analysis and reporting are in preparation.
