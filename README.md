@@ -1,66 +1,43 @@
 # Modular longitudinal risk prediction for MCI-to-AD conversion
 
-**A summary-augmented modular longitudinal model for low-burden clinical risk prediction, developed on ADNI and externally evaluated on NACC.**
+**An externally evaluated modular longitudinal model for low-burden MCI-to-AD risk prediction using routine clinical assessments.**
 
-This repository presents a retrospective clinical-AI project for predicting 1-, 2-, 3-, and 5-year conversion from mild cognitive impairment (MCI) to Alzheimer's disease (AD) dementia using routine longitudinal clinical assessments.
+This repository presents a retrospective clinical-AI pipeline for predicting 1-, 2-, 3-, and 5-year conversion from mild cognitive impairment (MCI) to Alzheimer's disease (AD) dementia.
 
-The final model showed strong internal performance on ADNI and retained moderate external discrimination on NACC under a cross-cohort missing-feature setting, supporting the feasibility of low-burden longitudinal risk stratification when biomarkers or imaging are unavailable.
+Developed on ADNI and externally evaluated on NACC, the final summary-augmented modular model achieved strong internal discrimination and retained moderate external discrimination under cross-cohort feature mismatch.
 
 ---
 
 ## Highlights
 
-- **Clinical task:** multi-horizon MCI-to-AD dementia conversion prediction.
-- **Inputs:** eight routine clinical variables, without PET, CSF, MRI, or APOE.
+- **Task:** 1/2/3/5-year MCI-to-AD dementia conversion prediction.
+- **Inputs:** eight routine clinical variables; no PET, CSF, MRI, or APOE.
 - **Model:** summary-augmented feature-level modular longitudinal model.
-- **Internal development:** ADNI.
-- **External evaluation:** NACC first-MCI external cohort under a no_ADAS13 setting.
-- **Main result:** ADNI internal AUROC 0.904-0.926; NACC external AUROC 0.733-0.749.
-- **Calibration analysis:** local recalibration improved long-horizon absolute risk calibration without retraining the prediction model.
+- **Development cohort:** ADNI.
+- **External evaluation:** NACC first-MCI cohort with ADAS13 unavailable.
+- **Performance:** ADNI internal AUROC 0.904-0.926; NACC external AUROC 0.733-0.749.
+- **Calibration:** local recalibration improved long-horizon probability calibration without retraining the prediction model.
 
 ---
 
-## Main result
+## Results
 
-The model achieved strong internal discrimination on ADNI and retained stable external discrimination on NACC:
+The model achieved strong internal discrimination on ADNI and retained moderate external discrimination on NACC.
 
 | Evaluation | Horizon range | AUROC range | Main interpretation |
 |---|---:|---:|---|
 | ADNI internal test | 1/2/3/5y | 0.904-0.926 | strong internal discrimination |
-| NACC external evaluation | 1/2/3/5y | 0.733-0.749 | moderate external discrimination under no_ADAS13 |
+| NACC external evaluation | 1/2/3/5y | 0.733-0.749 | moderate external discrimination with ADAS13 unavailable |
 
 These results suggest that routine longitudinal cognitive, global-severity, and functional assessments contain transferable risk-stratification signal for MCI-to-AD conversion, even when feature availability differs across cohorts.
 
 ---
 
-## Why this matters
-
-Many AD progression models rely on specialized biomarkers or imaging. This project focuses on a lower-burden setting: longitudinal clinical assessments that are more likely to be available in routine memory-clinic workflows, retrospective registries, or resource-limited clinical environments.
-
-The external NACC evaluation provides a practical stress test: the ADNI-trained model was evaluated under a systematic feature mismatch where ADAS13 was unavailable. The model still retained moderate discrimination, while calibration analysis showed that absolute probabilities benefit from local recalibration.
-
-A practical takeaway is:
-
-> A portable longitudinal model can support risk stratification across cohorts, while a lightweight local calibration layer may be needed to align absolute risk estimates to a specific site or registry.
-
----
-
 ## Data and variables
 
-Raw ADNI and NACC participant-level data are **not redistributed** in this repository.
+Raw ADNI and NACC participant-level data are not redistributed.
 
-The final model uses eight routine clinical variables:
-
-| Variable | Meaning |
-|---|---|
-| `age_at_visit` | age at clinical visit |
-| `sex_male` | sex indicator |
-| `PTEDUCAT` | years of education |
-| `MMSE` | Mini-Mental State Examination |
-| `ADAS13` | Alzheimer's Disease Assessment Scale, 13-item cognitive score |
-| `CDGLOBAL` | Clinical Dementia Rating global score |
-| `CDRSB` | Clinical Dementia Rating Sum of Boxes |
-| `FAQTOTAL` | Functional Activities Questionnaire total score |
+The model uses eight routine clinical variables: age at visit, sex, education, MMSE, ADAS13, Clinical Dementia Rating global score, Clinical Dementia Rating Sum of Boxes, and Functional Activities Questionnaire total score.
 
 For preprocessing details, see `docs/DATA_PROCESSING.md`.
 
@@ -82,7 +59,7 @@ The model uses one feature module per clinical variable, plus a visit-process co
 
 ---
 
-## Internal ADNI evaluation
+## ADNI internal evaluation
 
 Internal full-module performance was evaluated on the ADNI test split with bootstrap 95% confidence intervals.
 
@@ -103,7 +80,7 @@ External evaluation used the frozen ADNI-trained model without retraining.
 |---|---|
 | External cohort | NACC first-MCI external evaluation cohort |
 | Analysis unit | final evaluable first-MCI landmark samples |
-| Scenario | no_ADAS13 |
+| External feature setting | ADAS13 unavailable |
 | Final evaluable N | 9,002 landmark samples |
 | Retraining | none |
 
@@ -120,14 +97,9 @@ Here, external N refers to the final evaluable first-MCI landmark samples used f
 
 ## Calibration analysis
 
-The frozen model preserved useful risk ranking in NACC, but its raw long-horizon probabilities were systematically lower than the observed event rates. A lightweight local Platt recalibration layer improved Brier score without retraining the prediction model.
+The frozen model retained useful risk ranking in NACC, while its raw long-horizon probabilities were conservative. A lightweight local Platt recalibration layer improved probability calibration without retraining the prediction model.
 
-| Horizon | Observed event rate | Mean frozen predicted risk | Raw Brier | Local recalibrated Brier |
-|---:|---:|---:|---:|---:|
-| 3y | 0.425 | 0.277 | 0.241 | 0.203 |
-| 5y | 0.643 | 0.405 | 0.286 | 0.191 |
-
-This is a common and important issue in clinical prediction: discrimination can transfer across cohorts better than absolute probability calibration.
+Detailed calibration tables are provided in `docs/tables/`.
 
 ---
 
@@ -179,9 +151,9 @@ requirements.txt        Python dependencies
 
 ## Availability and limitations
 
-Raw ADNI/NACC data, participant-level feature tensors, model checkpoints, calibration objects, patient-level predictions, and the private paper draft are not redistributed. Reproducing the full pipeline requires authorized local access to ADNI/NACC.
+Raw ADNI/NACC data, participant-level feature tensors, model checkpoints, calibration objects, and patient-level predictions are not redistributed. Full reproduction requires authorized local access to ADNI/NACC.
 
-This is a retrospective research project. It has not been prospectively validated and is not intended for clinical deployment. NACC external evaluation was conducted under a no_ADAS13 setting rather than a full-module setting.
+This is a retrospective research project. It has not been prospectively validated and is not intended for clinical deployment. NACC external evaluation was conducted with ADAS13 unavailable rather than in a full-feature external setting.
 
 ---
 
