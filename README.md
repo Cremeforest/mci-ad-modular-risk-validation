@@ -14,8 +14,8 @@ Developed on ADNI and evaluated on NACC, the final summary-augmented modular mod
 - **Clinical setting:** low-burden longitudinal risk stratification using routine clinical assessments.
 - **Longitudinal design:** leakage-aware MCI landmark construction with multi-horizon labels and observed-label masks.
 - **Model:** summary-augmented feature-level modular longitudinal model.
-- **Missingness handling:** train-only imputation with explicit missingness masks and availability-aware modular fusion.
-- **External evaluation:** developed on ADNI and externally evaluated on the NACC first-MCI cohort.
+- **Missingness handling:** train-split-only imputation with explicit missingness masks and availability-aware modular fusion.
+- **External evaluation:** ADNI development and NACC first-MCI external evaluation.
 - **Performance:** ADNI internal AUROC 0.904-0.926; NACC external AUROC 0.733-0.749.
 
 ---
@@ -65,7 +65,7 @@ The public workflow follows four stages:
 ```text
 ADNI clinical tables
   -> longitudinal MCI visit-history construction
-  -> train-only preprocessing and dynamic token construction
+  -> train-split-only preprocessing and longitudinal token construction
   -> summary-augmented modular longitudinal model
   -> frozen-model NACC external evaluation
 ```
@@ -103,7 +103,7 @@ Detailed cohort construction and denominator definitions are documented in `docs
 
 ## Calibration analysis
 
-External calibration was also audited. The frozen model retained useful risk ranking in NACC, while a lightweight recalibration layer improved long-horizon probability estimates without retraining the prediction model.
+External calibration was audited as a secondary analysis. A lightweight recalibration layer improved long-horizon probability estimates without retraining the prediction model.
 
 ---
 
@@ -141,7 +141,7 @@ requirements.txt        Python dependencies
 
 Raw ADNI/NACC data, participant-level feature tensors, model checkpoints, calibration objects, and patient-level predictions are not redistributed. Full reproduction requires authorized local access to ADNI/NACC.
 
-This is a retrospective research project. It has not been prospectively validated and is not intended for clinical deployment. NACC external evaluation was conducted with ADAS13 unavailable rather than in a full-feature external setting.
+This is a retrospective research project. It has not been prospectively validated and is not intended for clinical deployment.
 
 ---
 
