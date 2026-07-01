@@ -1,4 +1,4 @@
-# Low-burden longitudinal risk prediction for MCI-to-AD conversion
+# Low-burden modular longitudinal risk prediction for MCI-to-AD conversion
 
 **A summary-augmented modular model using routine clinical assessments, developed on ADNI and externally evaluated on NACC.**
 
