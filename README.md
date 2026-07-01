@@ -1,34 +1,47 @@
 # Modular longitudinal risk prediction for MCI-to-AD conversion
 
-**Routine clinical assessments | ADNI development | NACC external validation | Research use only**
+**A summary-augmented modular longitudinal model for low-burden clinical risk prediction, developed on ADNI and externally evaluated on NACC.**
 
-This repository presents a retrospective clinical-AI project for predicting conversion from mild cognitive impairment (MCI) to Alzheimer's disease (AD) dementia using low-burden longitudinal clinical assessments.
+This repository presents a retrospective clinical-AI project for predicting 1-, 2-, 3-, and 5-year conversion from mild cognitive impairment (MCI) to Alzheimer's disease (AD) dementia using routine longitudinal clinical assessments.
 
-The final model is a **summary-augmented feature-level modular longitudinal model** designed for settings where biomarkers or imaging may be unavailable, such as routine memory-clinic assessment, retrospective registry analysis, or resource-limited clinical environments.
-
-> **Research-use notice:** This repository is not a clinical tool, not medical advice, and not intended for diagnosis, treatment decisions, triage, prognosis communication, or patient-level medical decision-making.
+The final model showed strong internal performance on ADNI and retained moderate external discrimination on NACC under a cross-cohort missing-feature setting, supporting the feasibility of low-burden longitudinal risk stratification when biomarkers or imaging are unavailable.
 
 ---
 
-## Main contribution
+## Highlights
 
-This project builds an end-to-end MCI-to-AD risk prediction workflow:
-
-1. **Longitudinal cohort construction** from MCI visit histories with 1/2/3/5-year conversion labels and observed-label masks.
-2. **Dynamic clinical token construction** using values, missingness masks, timing, longitudinal change, and visit masks.
-3. **Summary-augmented modular modeling**, where each clinical variable is handled by a feature-level module.
-4. **NACC external validation** of a frozen ADNI-trained model under a realistic no_ADAS13 missing-feature setting.
-5. **Calibration-shift analysis**, showing that external risk ranking transferred better than raw absolute probabilities.
+- **Clinical task:** multi-horizon MCI-to-AD dementia conversion prediction.
+- **Inputs:** eight routine clinical variables, without PET, CSF, MRI, or APOE.
+- **Model:** summary-augmented feature-level modular longitudinal model.
+- **Internal development:** ADNI.
+- **External evaluation:** NACC first-MCI external cohort under a no_ADAS13 setting.
+- **Main result:** ADNI internal AUROC 0.904-0.926; NACC external AUROC 0.733-0.749.
+- **Calibration analysis:** local recalibration improved long-horizon absolute risk calibration without retraining the prediction model.
 
 ---
 
-## Main finding
+## Main result
 
-The frozen ADNI-trained model retained **moderate external discrimination** on NACC, but raw absolute risks were underestimated under cross-cohort shift.
+The model achieved strong internal discrimination on ADNI and retained stable external discrimination on NACC:
 
-> Routine cognitive, global-severity, and functional assessments can support cross-cohort **risk ranking**, but absolute risk probabilities are not automatically transportable across cohorts.
+| Evaluation | Horizon range | AUROC range | Main interpretation |
+|---|---:|---:|---|
+| ADNI internal test | 1/2/3/5y | 0.904-0.926 | strong internal discrimination |
+| NACC external evaluation | 1/2/3/5y | 0.733-0.749 | moderate external discrimination under no_ADAS13 |
 
-This supports a future clinical-AI design pattern: a portable risk-ranking model plus a site- or cohort-specific calibration layer.
+These results suggest that routine longitudinal cognitive, global-severity, and functional assessments contain transferable risk-stratification signal for MCI-to-AD conversion, even when feature availability differs across cohorts.
+
+---
+
+## Why this matters
+
+Many AD progression models rely on specialized biomarkers or imaging. This project focuses on a lower-burden setting: longitudinal clinical assessments that are more likely to be available in routine memory-clinic workflows, retrospective registries, or resource-limited clinical environments.
+
+The external NACC evaluation provides a practical stress test: the ADNI-trained model was evaluated under a systematic feature mismatch where ADAS13 was unavailable. The model still retained moderate discrimination, while calibration analysis showed that absolute probabilities benefit from local recalibration.
+
+A practical takeaway is:
+
+> A portable longitudinal model can support risk stratification across cohorts, while a lightweight local calibration layer may be needed to align absolute risk estimates to a specific site or registry.
 
 ---
 
@@ -49,8 +62,6 @@ The final model uses eight routine clinical variables:
 | `CDRSB` | Clinical Dementia Rating Sum of Boxes |
 | `FAQTOTAL` | Functional Activities Questionnaire total score |
 
-The final model focuses on routinely available clinical assessments and does not use PET, CSF, MRI, or APOE inputs.
-
 For preprocessing details, see `docs/DATA_PROCESSING.md`.
 
 ---
@@ -64,7 +75,7 @@ ADNI clinical tables
   -> longitudinal MCI visit-history construction
   -> train-only preprocessing and dynamic token construction
   -> summary-augmented modular longitudinal model
-  -> frozen-model NACC external validation
+  -> frozen-model NACC external evaluation
 ```
 
 The model uses one feature module per clinical variable, plus a visit-process component for timing and missingness. Each feature module combines temporal encoding of observed visit history with module-local trajectory summaries such as last value, mean, variability, change, slope-like trend, observed count, and observed rate.
@@ -82,13 +93,11 @@ Internal full-module performance was evaluated on the ADNI test split with boots
 | 3y | 0.914 (0.880-0.943) | 0.822 (0.746-0.877) | 0.099 (0.081-0.118) |
 | 5y | 0.926 (0.899-0.952) | 0.903 (0.860-0.940) | 0.108 (0.088-0.127) |
 
-These internal results should be interpreted together with the external validation below.
-
 ---
 
-## NACC external validation
+## NACC external evaluation
 
-External validation used the frozen ADNI-trained model without retraining.
+External evaluation used the frozen ADNI-trained model without retraining.
 
 | Item | Setting |
 |---|---|
@@ -109,16 +118,16 @@ Here, external N refers to the final evaluable first-MCI landmark samples used f
 
 ---
 
-## Calibration under cohort shift
+## Calibration analysis
 
-Raw frozen probabilities underestimated long-horizon absolute risk in NACC.
+The frozen model preserved useful risk ranking in NACC, but its raw long-horizon probabilities were systematically lower than the observed event rates. A lightweight local Platt recalibration layer improved Brier score without retraining the prediction model.
 
-| Horizon | Observed event rate | Mean frozen predicted risk | Raw Brier | Cross-fitted local recalibrated Brier |
+| Horizon | Observed event rate | Mean frozen predicted risk | Raw Brier | Local recalibrated Brier |
 |---:|---:|---:|---:|---:|
 | 3y | 0.425 | 0.277 | 0.241 | 0.203 |
 | 5y | 0.643 | 0.405 | 0.286 | 0.191 |
 
-Cross-fitted local Platt recalibration improved calibration without retraining the prediction model.
+This is a common and important issue in clinical prediction: discrimination can transfer across cohorts better than absolute probability calibration.
 
 ---
 
@@ -129,7 +138,7 @@ The numbered public scripts follow three core stages:
 ```text
 scripts/01-03  ADNI data processing
 scripts/04-06  internal model development and evaluation
-scripts/07-13  NACC external validation
+scripts/07-13  NACC external evaluation
 ```
 
 The Streamlit demo is kept separately under `app/streamlit_app.py`.
@@ -149,7 +158,7 @@ streamlit run app/streamlit_app.py
 
 The demo accepts up to 8 visit records and displays 1/2/3/5-year research-demo risk estimates.
 
-The public demo uses a lightweight proxy scoring function for interface illustration. It does **not** load the full private research checkpoint, raw data, feature tensors, calibration objects, or patient-level predictions.
+The public demo uses a lightweight proxy scoring function for interface illustration. It does not load the full private research checkpoint, raw data, feature tensors, calibration objects, or patient-level predictions.
 
 ---
 
@@ -168,28 +177,14 @@ requirements.txt        Python dependencies
 
 ---
 
-## What is not included
+## Availability and limitations
 
-This public repository intentionally excludes raw ADNI/NACC data, participant-level feature tensors, model checkpoints, calibration objects, patient-level predictions, and the private paper draft.
+Raw ADNI/NACC data, participant-level feature tensors, model checkpoints, calibration objects, patient-level predictions, and the private paper draft are not redistributed. Reproducing the full pipeline requires authorized local access to ADNI/NACC.
 
-Reproducing the full ADNI/NACC pipeline requires authorized local access to the corresponding datasets.
-
----
-
-## Limitations
-
-- Retrospective cohort modeling.
-- No prospective validation.
-- Not clinically deployable.
-- NACC external validation was no_ADAS13, not full-module external validation.
-- Raw frozen probabilities required local recalibration under external cohort shift.
-- Module weights and masks should not be interpreted as causal feature importance.
-- The Streamlit app is a public proxy demo, not the deployed research model.
+This is a retrospective research project. It has not been prospectively validated and is not intended for clinical deployment. NACC external evaluation was conducted under a no_ADAS13 setting rather than a full-module setting.
 
 ---
 
 ## Project status
 
 Manuscript-style write-up in preparation.
-
-This repository is currently maintained as a public research portfolio and PhD outreach package.
