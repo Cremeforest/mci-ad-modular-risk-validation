@@ -1,22 +1,22 @@
-# Modular longitudinal risk prediction for MCI-to-AD conversion
+# Low-burden longitudinal risk prediction for MCI-to-AD conversion
 
-**An externally evaluated modular longitudinal model for low-burden MCI-to-AD risk prediction using routine clinical assessments.**
+**A summary-augmented modular model using routine clinical assessments, developed on ADNI and externally evaluated on NACC.**
 
-This repository presents a retrospective clinical-AI pipeline for predicting 1-, 2-, 3-, and 5-year conversion from mild cognitive impairment (MCI) to Alzheimer's disease (AD) dementia.
+This repository presents an externally evaluated clinical-AI pipeline for predicting 1-, 2-, 3-, and 5-year conversion from mild cognitive impairment (MCI) to Alzheimer's disease (AD) dementia using routine longitudinal clinical assessments.
 
-Developed on ADNI and externally evaluated on NACC, the final summary-augmented modular model achieved strong internal discrimination and retained moderate external discrimination under cross-cohort feature mismatch.
+Developed on ADNI and evaluated on NACC, the final summary-augmented modular model achieved strong internal discrimination and retained moderate external discrimination, supporting low-burden risk stratification in routine memory-clinic workflows, retrospective registries, and resource-limited clinical environments where PET, CSF, MRI, or genetic biomarkers may be unavailable.
 
 ---
 
 ## Highlights
 
 - **Task:** 1/2/3/5-year MCI-to-AD dementia conversion prediction.
-- **Inputs:** eight routine clinical variables; no PET, CSF, MRI, or APOE.
+- **Clinical setting:** low-burden longitudinal risk stratification using routine clinical assessments.
+- **Longitudinal design:** leakage-aware MCI landmark construction with multi-horizon labels and observed-label masks.
 - **Model:** summary-augmented feature-level modular longitudinal model.
-- **Development cohort:** ADNI.
-- **External evaluation:** NACC first-MCI cohort with ADAS13 unavailable.
+- **Missingness handling:** train-only imputation with explicit missingness masks and availability-aware modular fusion.
+- **External evaluation:** developed on ADNI and externally evaluated on the NACC first-MCI cohort.
 - **Performance:** ADNI internal AUROC 0.904-0.926; NACC external AUROC 0.733-0.749.
-- **Calibration:** local recalibration improved long-horizon probability calibration without retraining the prediction model.
 
 ---
 
@@ -27,9 +27,24 @@ The model achieved strong internal discrimination on ADNI and retained moderate 
 | Evaluation | Horizon range | AUROC range | Main interpretation |
 |---|---:|---:|---|
 | ADNI internal test | 1/2/3/5y | 0.904-0.926 | strong internal discrimination |
-| NACC external evaluation | 1/2/3/5y | 0.733-0.749 | moderate external discrimination with ADAS13 unavailable |
+| NACC external evaluation | 1/2/3/5y | 0.733-0.749 | moderate external discrimination |
 
 These results suggest that routine longitudinal cognitive, global-severity, and functional assessments contain transferable risk-stratification signal for MCI-to-AD conversion, even when feature availability differs across cohorts.
+
+---
+
+## Quick demo
+
+A lightweight Streamlit demo illustrates the intended interface style:
+
+```bash
+pip install -r requirements.txt
+streamlit run app/streamlit_app.py
+```
+
+The demo accepts up to 8 visit records and displays 1/2/3/5-year research-demo risk estimates.
+
+The public demo uses a lightweight proxy scoring function for interface illustration. It does not load the full private research checkpoint, raw data, feature tensors, calibration objects, or patient-level predictions.
 
 ---
 
@@ -74,17 +89,8 @@ Internal full-module performance was evaluated on the ADNI test split with boots
 
 ## NACC external evaluation
 
-External evaluation used the frozen ADNI-trained model without retraining.
-
-| Item | Setting |
-|---|---|
-| External cohort | NACC first-MCI external evaluation cohort |
-| Analysis unit | final evaluable first-MCI landmark samples |
-| External feature setting | ADAS13 unavailable |
-| Final evaluable N | 9,002 landmark samples |
-| Retraining | none |
-
-Here, external N refers to the final evaluable first-MCI landmark samples used for prediction and metric calculation, not the broader number of NACC participants with any MCI history during screening.
+The frozen ADNI-trained model was evaluated on the NACC first-MCI external cohort without retraining, with ADAS13 unavailable in the external feature set.
+Detailed cohort construction and denominator definitions are documented in `docs/METHODS_AND_RESULTS.md`.
 
 | Horizon | AUROC | 95% CI | AUPRC | 95% CI | Brier |
 |---:|---:|---:|---:|---:|---:|
@@ -97,9 +103,7 @@ Here, external N refers to the final evaluable first-MCI landmark samples used f
 
 ## Calibration analysis
 
-The frozen model retained useful risk ranking in NACC, while its raw long-horizon probabilities were conservative. A lightweight local Platt recalibration layer improved probability calibration without retraining the prediction model.
-
-Detailed calibration tables are provided in `docs/tables/`.
+External calibration was also audited. The frozen model retained useful risk ranking in NACC, while a lightweight recalibration layer improved long-horizon probability estimates without retraining the prediction model.
 
 ---
 
@@ -119,21 +123,6 @@ For the full script map, see `docs/SCRIPT_WORKFLOW.md`.
 
 ---
 
-## Patient-style research demo
-
-A lightweight Streamlit demo illustrates the intended interface style:
-
-```bash
-pip install -r requirements.txt
-streamlit run app/streamlit_app.py
-```
-
-The demo accepts up to 8 visit records and displays 1/2/3/5-year research-demo risk estimates.
-
-The public demo uses a lightweight proxy scoring function for interface illustration. It does not load the full private research checkpoint, raw data, feature tensors, calibration objects, or patient-level predictions.
-
----
-
 ## Repository structure
 
 ```text
@@ -143,7 +132,6 @@ scripts/                public data-processing, training, and validation workflo
 README.md               project overview
 MODEL_CARD.md           intended use and limitations
 LICENSE                 MIT license
-NOTICE.md               data/model artifact notice
 requirements.txt        Python dependencies
 ```
 
